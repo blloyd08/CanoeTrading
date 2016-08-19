@@ -1,7 +1,9 @@
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Stack;
 
 public class Canoe {
@@ -11,23 +13,22 @@ public class Canoe {
 	
 	public void runTest(){
 		//Rental Costs
-		int[][] r = new int[][] {{0,2,3,7}
+		Integer[][] r = new Integer[][] {{0,2,3,7}
 								,{0,0,2,4}
 								,{0,0,0,2}
 								,{0,0,0,0}};
 		int start = 0;
 		int end = r.length -1 ;
 		Stack<Integer> sequence = new Stack<Integer>();
-								
+							
 		//bruteForce(r, start, end);
-		//System.out.println("DC:" + divideAndConqure(sequence,r,end));
-		System.out.println("Dynamic Programming: " + dynamic(r, sequence));
-		System.out.println(sequence);
+		System.out.println("DC:" + divideAndConqure(r,sequence, end));
+//		System.out.println("Dynamic Programming: " + dynamic(r, sequence));
+	System.out.println(sequence);
 	}
-	
 
 	//Dynamic programming implementation of the canoe trading problem
-	public int dynamic(int[][] r, Collection<Integer> sequence){
+	public static int dynamic(Integer[][] r, Collection<Integer> sequence){
 		//Number of posts
 		int n = r.length;
 		//Ensure collection is empty
@@ -52,7 +53,7 @@ public class Canoe {
 			for (int j = 1; j < i; j++){
 				int temp = r[j][i]+c[j];
 				//Check minimum
-				if (temp < c[i]){
+				if (temp <= c[i]){
 					c[i] = temp;
 					minS = j;
 				}
@@ -76,8 +77,12 @@ public class Canoe {
 		return c[n-1];
 	}
 	
+	public static int divideAndConqure (Integer[][] r, Stack<Integer> s){
+		return divideAndConqure(r, s, r.length-1);
+	}
+	
 	//Recursive method for divide and conqure implementation
-	public int divideAndConqure (Stack<Integer> s, int[][] r, int end){
+	private static int divideAndConqure (Integer[][] r,Stack<Integer> s, int end){
 		//Base case
 		if (end == 0){
 			s.push(0);
@@ -88,8 +93,8 @@ public class Canoe {
 		int curValue = 0;
 		for (int i = 0; i < end; i++) {
 			Stack<Integer> minS = new Stack<Integer>();
-			curValue = r[i][end] + divideAndConqure(minS,r,i);
-			if (curValue < min){
+			curValue = r[i][end] + divideAndConqure(r, minS,i);
+			if (curValue <= min){
 				//Set minimum value
 				min = curValue;
 				//Set minimum sequence
@@ -102,15 +107,13 @@ public class Canoe {
 		
 	}
 	
-	public int bruteForce(int[][] r, int poleStart, int poleEnd){
+	@SuppressWarnings("unchecked")
+	public static int bruteForce(Integer[][] r,Collection<Integer> s){
 		LinkedList<Integer> seq = new LinkedList<Integer>();
 		LinkedList<Integer> minSeq = new LinkedList<Integer>();
-		/*1-2-3-4 	= 0-1-2-3
-		 * 1-2-4	= 0-1-3
-		 * 1-3-4	= 0-2-3
-		 * 1-4		= 0-3
-		 */
 		
+		int poleStart = 0;
+		int poleEnd = r.length -1;
 		//Loop through all starting positions
 			//Then offset the number of jumps after the starting position
 			//Evaluate cost at the end of each offset loop
@@ -133,13 +136,9 @@ public class Canoe {
 			seq.clear();
 			seq.add(poleStart);
 			seq.add(start);
-			System.out.println("Start: " + start);
 			
 			//Handle if start Position is already at the end
-			if (start == poleEnd){
-				System.out.println(poleStart + "-" + poleEnd);
-				System.err.println(startPosCost);
-				
+			if (start == poleEnd){	
 				//Set new minimum cost if first pole to start position is less than current min
 				if (startPosCost < min){
 					min = startPosCost;
@@ -151,10 +150,8 @@ public class Canoe {
 					//Set offset total to that of the first pole to stating position
 					int offsetTotal = startPosCost;
 					LinkedList<Integer> offsetSeq = (LinkedList<Integer>) seq.clone();
-					System.out.println("Offset: " + offset);
 					//Set offset position to start position
 					int j = start;
-					System.out.println(poleStart + "-" + start);
 					
 					//Run offset
 					while (j < poleEnd){
@@ -165,32 +162,206 @@ public class Canoe {
 						j += offset;
 						
 						//Handle jumping over ending pole
-						if (j > poleEnd){
-							System.out.println(prev + "-" + poleEnd);
+						if (j >= poleEnd){
 							offsetTotal += r[prev][poleEnd];
 							offsetSeq.add(poleEnd);
 							break;
 						}
-						System.out.println(prev + "-" + j);
 						offsetTotal += r[prev][j];
 						offsetSeq.add(j);
 					}//End offset while loop
-					System.err.println(offsetTotal);
-					System.err.println(offsetSeq);
-					
 					//Set minimum
 					if (offsetTotal < min){
 						min = offsetTotal;
 						minSeq = (LinkedList<Integer>) offsetSeq.clone();
 					}
-					
-					System.out.println("end offset");
 				}//End offset for loop
 			}//end starting position loop
-			
-			System.out.println("end starting position");
 		}
-		System.err.println("Minimum:" + min + "-" + minSeq);
-		return 0;
+		s.addAll(minSeq);
+		return min;
 	}
+	
+	
+	@SuppressWarnings("unchecked")
+	public static int bruteForce2(Integer[][] r,Collection<Integer> s){
+		LinkedList<Integer> seq = new LinkedList<Integer>();
+		LinkedList<Integer> minSeq = new LinkedList<Integer>();
+		
+		int n = r.length;
+		//Loop through all starting positions
+			//Then offset the number of jumps after the starting position
+			//Evaluate cost at the end of each offset loop
+		
+		
+		//Handle start and end at same postion 
+		if (n <= 1){
+			return 0;
+		}
+		
+		//Cost from first pole to starting position
+		int startPosCost = r[0][n-1];
+		
+		//Minimum cost
+		int min = Integer.MAX_VALUE;
+		
+		//r[
+		//Loop through starting position
+		for (int start = n-1; start > 0; start--){
+			//Get starting position total
+			startPosCost = r[0][start];
+//			seq.clear();
+//			seq.add();
+//			seq.add(start);
+			
+			//r[j][i]+c[j];
+			//Handle if start Position is already at the end
+			if (start == n-1){	
+				//Set new minimum cost if first pole to start position is less than current min
+				if (startPosCost < min){
+					min = startPosCost;
+					minSeq = (LinkedList<Integer>) seq.clone();
+				}
+			} else {
+				//Loop through offsets
+				for(int offset = 1; (start + offset) <= n-1; offset++){
+					//Set offset total to that of the first pole to stating position
+					int offsetTotal = startPosCost;
+					LinkedList<Integer> offsetSeq = (LinkedList<Integer>) seq.clone();
+					//Set offset position to start position
+					int j = start;
+					
+					//Run offset
+					while (j < n-1){
+						//Previous value of j
+						int prev = j;
+						
+						//Add offset
+						j += offset;
+						
+						//Handle jumping over ending pole
+						if (j > n-1){
+							offsetTotal += r[prev][n-1];
+							offsetSeq.add(n-1);
+							break;
+						}
+						offsetTotal += r[prev][j];
+						offsetSeq.add(j);
+					}//End offset while loop
+					//Set minimum
+					if (offsetTotal < min){
+						min = offsetTotal;
+						minSeq = (LinkedList<Integer>) offsetSeq.clone();
+					}
+				}//End offset for loop
+			}//end starting position loop
+		}
+		s.addAll(minSeq);
+		return min;
+	}
+	
+	
+	
+	
+	
+	    /**
+	     * @param args the command line arguments
+	     */
+	    public static void power(Integer[][] r) {
+	    	int n = r.length;
+	        LinkedList<Integer> orgSet = new LinkedList<>();
+	        
+//	        Integer[][] r = {{0,2,3,7,6},
+//	                         {0,0,2,4,3},
+//	                         {0,0,0,2,7},
+//	                         {0,0,0,0,2},
+//	                         {0,0,0,0,0}};
+
+	        for (int i = 1; i < n-1; i++) {
+	            orgSet.add(i);
+	        }
+
+	        LinkedList<LinkedList<Integer>> theSet = powerSet(orgSet);
+	       
+
+//	        Iterator<LinkedList<Integer>> inter = theSet.iterator();
+//	        
+//	        System.out.println("This is the list of sets");
+//	        while (inter.hasNext()) {
+//	            LinkedList<Integer> tempSet = inter.next();
+//	            Iterator<Integer> tempInt = tempSet.iterator();
+//	            System.out.print("{");
+//	            while (tempInt.hasNext()) {
+//	                System.out.print(tempInt.next());
+//	            }
+//	            System.out.println("}");
+//	        }
+	         LinkedList<Integer> sequenceSet = new LinkedList<Integer>();
+	         int theMin = minCost(theSet, r, sequenceSet);
+	         
+	         System.out.println("The Min is: " + theMin);
+	         
+	         Iterator<Integer> damn = sequenceSet.iterator();
+	      
+	         while(damn.hasNext()) {
+	             System.out.print(damn.next());
+	         }
+	    }
+
+	    public static LinkedList<LinkedList<Integer>> powerSet(LinkedList<Integer> originalSet) {
+	        LinkedList<LinkedList<Integer>> sets = new LinkedList<LinkedList<Integer>>();
+	        if (originalSet.isEmpty()) {
+	            sets.add(new LinkedList<Integer>());
+	            return sets;
+	        }
+	        List<Integer> list = new ArrayList<Integer>(originalSet);
+	        Integer head = list.get(0);
+	        LinkedList<Integer> rest = new LinkedList<Integer>(list.subList(1, list.size()));
+	        for (LinkedList<Integer> set : powerSet(rest)) {
+	            LinkedList<Integer> newSet = new LinkedList<Integer>();
+	            newSet.add(head);
+	            newSet.addAll(set);
+	            sets.add(newSet);
+	            sets.add(set);
+	        }
+	        return sets;
+	    }
+	    
+	    public static int minCost(LinkedList<LinkedList<Integer>> theList, Integer [][] r, LinkedList<Integer> theSet) {
+	        Integer min = Integer.MAX_VALUE;
+	        int index = 0; 
+	        int indexCounter = 0;
+	        Iterator<LinkedList<Integer>> inter = theList.iterator();
+	        
+	        while (inter.hasNext()) {
+	            LinkedList<Integer> tempSet = inter.next();
+	            Iterator<Integer> tempInt = tempSet.iterator();
+	            tempSet.addFirst(new Integer(0));
+	            tempSet.addLast(new Integer(r.length - 1));
+	            
+//	            while (tempInt.hasNext()) {
+	                int tempCost = 0;
+	                
+	                //System.out.println("This is the Size: " + tempSet.size());
+	                for (int k = 0; k < tempSet.size()-1; k++) {
+	                    //System.out.println("This is the coords " + tempSet.get(k) + " and " + tempSet.get(k+1));
+	                    //System.out.println(tempSet.get(k) + "-" + tempSet.get(k+1) + ":" +r[tempSet.get(k)][tempSet.get(k+1)]);
+	                	tempCost += r[tempSet.get(k)][tempSet.get(k+1)];
+	                    //System.out.println("TempCost " + tempCost);
+	                }
+	                if (tempCost < min) {
+	                    min = tempCost;
+	                    index = indexCounter;
+	                }
+	                indexCounter++;
+	                //System.out.println("\n This is the end of the loop \n");
+//	            }
+	            
+	           
+	        }
+	        for (Integer i : theList.get(index)) {
+	            theSet.add(i);
+	        }
+	        return min;
+	    }
 }
